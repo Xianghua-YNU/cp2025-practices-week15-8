@@ -107,7 +107,18 @@ def calculate_energy(state_vector, gm_val, m=1.0):
     8. 如果需要总能量，则乘以质量 m。
     """
     # TODO: 学生在此处实现代码
-    raise NotImplementedError(f"请在 {__file__} 中实现 calculate_energy 函数")
+    state_vector=np.atleast_2d(state_vector)
+    x,y,vx,vy=state_vector.T
+    r=np.sqrt(x**2+y**2)
+    if r<=1e-8:
+        r=1e-8
+    v_squared=vx**2+vy**2
+    kinetic_energy_per_m = 0.5 * v_squared
+    potential_energy_per_m = -gm_val / r
+    specific_energy = kinetic_energy_per_m + potential_energy_per_m
+    if state_vector.shape[0]==1:
+        return specific_energy[0]*m if m!=1.0 else specific_energy[0]:
+    return specific_energy*m if m != 1.0 else specific_energy
 
 def calculate_angular_momentum(state_vector, m=1.0):
     """
