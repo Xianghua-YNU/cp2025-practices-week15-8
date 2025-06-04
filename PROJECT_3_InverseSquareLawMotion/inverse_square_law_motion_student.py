@@ -41,11 +41,11 @@ def derivatives(t, state_vector, gm_val):
     """
     # TODO: 学生在此处实现代码
     x,y,vx,vy=state_vector
-    r_squared=(x**2+y**2)**1.5
-    if r_squared<=1e-8:
-        r_cubed=r_squared**1.5
-    else:
-        r_cubed=r_squared
+    r_cubed=(x**2+y**2)**1.5
+    if r_cubed < 1e-12:
+        ax = -gm_val * x / (1e-12) if x != 0 else 0
+        ay = -gm_val * y / (1e-12) if y != 0 else 0
+        return [vx, vy, ax, ay]
     ax=-gm_val*x/r_cubed
     ay=-gm_val*y/r_cubed
     return np.array([vx,vy,ax,ay])
@@ -76,6 +76,7 @@ def solve_orbit(initial_conditions, t_span, t_eval, gm_val):
     sol=solve_ivp(
         fun=derivatives,
         t_span=t_span,
+        y0=initial_conditions,
         t_eval=t_eval,
         args=(gm_val,),
         method='RK45',
@@ -107,18 +108,30 @@ def calculate_energy(state_vector, gm_val, m=1.0):
     8. 如果需要总能量，则乘以质量 m。
     """
     # TODO: 学生在此处实现代码
-    state_vector=np.atleast_2d(state_vector)
-    x,y,vx,vy=state_vector.T
+    is_single_state = state_vector.ndim == 1
+    if is_single_state:
+        state_vector = state_vector.reshape(1, -1)
+
+    x = state_vector[:, 0]
+    y = state_vector[:, 1]
+    vx = state_vector[:, 2]
+    vy = state_vector[:, 3]
     r=np.sqrt(x**2+y**2)
-    if r<=1e-8:
-        r=1e-8
-    v_squared=vx**2+vy**2
+    v_squared = vx**2 + vy**2
+    potential_energy_per_m = np.zeros_like(r)
+    non_zero_r_mask = r > 1e-12
+    potential_energy_per_m[non_zero_r_mask] = -gm_val / r[non_zero_r_mask]
+
+    if np.any(~non_zero_r_mask):
+        print("Warning: r=0 encountered in energy calculation. Potential energy is singular.")
+        potential_energy_per_m[~non_zero_r_mask] = -np.inf # Or some other indicator
+
     kinetic_energy_per_m = 0.5 * v_squared
-    potential_energy_per_m = -gm_val / r
     specific_energy = kinetic_energy_per_m + potential_energy_per_m
-    if state_vector.shape[0]==1:
-        return specific_energy[0]*m if m!=1.0 else specific_energy[0]
-    return specific_energy*m if m != 1.0 else specific_energy
+    
+    total_energy = m * specific_energy
+
+    return total_energy[0] if is_single_state else total_energy
 
 def calculate_angular_momentum(state_vector, m=1.0):
     """
@@ -139,12 +152,19 @@ def calculate_angular_momentum(state_vector, m=1.0):
     4. 如果需要总角动量，则乘以质量 m。
     """
     # TODO: 学生在此处实现代码
-    state_vector=np.atleast_2d(state_vector)
-    x,y,vx,vy=state_vector.T
+    is_single_state = state_vector.ndim == 1
+    if is_single_state:
+        state_vector = state_vector.reshape(1, -1)
+        
+    x = state_vector[:, 0]
+    y = state_vector[:, 1]
+    vx = state_vector[:, 2]
+    vy = state_vector[:, 3]
+
     specific_Lz = x * vy - y * vx
-    if state_vector.shape[0]==1:
-        return specific_Lz[0]*m if m!=1.0 else specific_Lz[0]
-    return specific_Lz*m if m != 1.0 else specific_Lz
+    total_Lz = m * specific_Lz
+    
+    return total_Lz[0] if is_single_state else total_Lz
 
 
 if __name__ == "__main__":
