@@ -193,29 +193,116 @@ if __name__ == "__main__":
 
     print("\n请参照 '项目说明.md' 完成各项任务。")
     print("使用 'tests/test_inverse_square_law_motion.py' 文件来测试你的代码实现。")
+    
+    t_start = 0
+    t_end_ellipse = 20  # Enough time for a few orbits for typical elliptical case
+    t_end_hyperbola = 5 # Hyperbola moves away quickly
+    t_end_parabola = 10 # Parabola also moves away
+    n_points = 1000
+    mass_particle = 1.0 # Assume m=1 for simplicity in E and L calculations
+    
+    # Case 1: Elliptical Orbit (E < 0)
+    # Initial conditions: x0=1, y0=0, vx0=0, vy0=0.8 (adjust vy0 for different eccentricities)
+    ic_ellipse = [1.0, 0.0, 0.0, 0.8]
+    t_eval_ellipse = np.linspace(t_start, t_end_ellipse, n_points)
+    sol_ellipse = solve_orbit(ic_ellipse, (t_start, t_end_ellipse), t_eval_ellipse, gm_val=GM)
+    x_ellipse, y_ellipse = sol_ellipse.y[0], sol_ellipse.y[1]
+    energy_ellipse = calculate_energy(sol_ellipse.y.T, GM, mass_particle)
+    Lz_ellipse = calculate_angular_momentum(sol_ellipse.y.T, mass_particle)
+    print(f"Ellipse: Initial E = {energy_ellipse[0]:.3f}, Initial Lz = {Lz_ellipse[0]:.3f}")
+    print(f"Ellipse: Final E = {energy_ellipse[-1]:.3f}, Final Lz = {Lz_ellipse[-1]:.3f} (Energy/Ang. Mom. Conservation Check)")
 
-    GM_val_demo = 1.0
-    #E<0
-    ic_ellipse_demo = [1.0, 0.0, 0.0, 0.8]
-    t_start_demo = 0
-    t_end_demo = 20
-    t_eval_demo = np.linspace(t_start_demo, t_end_demo, 500)
-    try:
-        sol_ellipse = solve_orbit(ic_ellipse_demo, (t_start_demo, t_end_demo), t_eval_demo, gm_val=GM_val_demo)
-        x_ellipse, y_ellipse = sol_ellipse.y[0], sol_ellipse.y[1]
+    # Case 2: Parabolic Orbit (E = 0)
+    # For E=0, v_escape = sqrt(2*GM/r). If x0=1, y0=0, then vy0 = sqrt(2*GM/1) = sqrt(2)
+    ic_parabola = [1.0, 0.0, 0.0, np.sqrt(2*GM)]
+    t_eval_parabola = np.linspace(t_start, t_end_parabola, n_points)
+    sol_parabola = solve_orbit(ic_parabola, (t_start, t_end_parabola), t_eval_parabola, gm_val=GM)
+    x_parabola, y_parabola = sol_parabola.y[0], sol_parabola.y[1]
+    energy_parabola = calculate_energy(sol_parabola.y.T, GM, mass_particle)
+    print(f"Parabola: Initial E = {energy_parabola[0]:.3f}")
+
+    # Case 3: Hyperbolic Orbit (E > 0)
+    # If vy0 > v_escape, e.g., vy0 = 1.5 * sqrt(2*GM)
+    ic_hyperbola = [1.0, 0.0, 0.0, 1.2 * np.sqrt(2*GM)] # Speed greater than escape velocity
+    t_eval_hyperbola = np.linspace(t_start, t_end_hyperbola, n_points)
+    sol_hyperbola = solve_orbit(ic_hyperbola, (t_start, t_end_hyperbola), t_eval_hyperbola, gm_val=GM)
+    x_hyperbola, y_hyperbola = sol_hyperbola.y[0], sol_hyperbola.y[1]
+    energy_hyperbola = calculate_energy(sol_hyperbola.y.T, GM, mass_particle)
+    print(f"Hyperbola: Initial E = {energy_hyperbola[0]:.3f}")
+
+    # Plotting the orbits
+    plt.figure(figsize=(10, 8))
+    plt.plot(x_ellipse, y_ellipse, label=f'Elliptical (E={energy_ellipse[0]:.2f})')
+    plt.plot(x_parabola, y_parabola, label=f'Parabolic (E={energy_parabola[0]:.2f})')
+    plt.plot(x_hyperbola, y_hyperbola, label=f'Hyperbolic (E={energy_hyperbola[0]:.2f})')
+    plt.plot(0, 0, 'ko', markersize=10, label='Central Body (Sun)') # Central body
+    plt.title('Orbits in an Inverse-Square Law Gravitational Field')
+    plt.xlabel('x (arbitrary units)')
+    plt.ylabel('y (arbitrary units)')
+    plt.axhline(0, color='gray', lw=0.5)
+    plt.axvline(0, color='gray', lw=0.5)
+    plt.legend()
+    plt.grid(True, linestyle='--', alpha=0.7)
+    plt.axis('equal') # Crucial for correct aspect ratio of orbits
+    plt.show()
+
+    # --- Demonstration for Task 3: Varying Angular Momentum for E < 0 ---
+    print("\nDemonstrating varying angular momentum for E < 0...")
+    E_target = -0.2 # Target negative energy (must be < 0 for ellipse)
+    r0 = 1.5       # Initial distance from center (on x-axis)
+    # E = 0.5*m*v0y^2 - GM*m/r0  => v0y = sqrt(2/m * (E_target + GM*m/r0))
+    # Ensure (E_target + GM*m/r0) is positive for real v0y
+    if E_target + GM * mass_particle / r0 < 0:
+        print(f"Error: Cannot achieve E_target={E_target} at r0={r0}. E_target must be > -GM*m/r0.")
+        print(f"Required E_target > {-GM*mass_particle/r0}")
+    else:
+        vy_base = np.sqrt(2/mass_particle * (E_target + GM * mass_particle / r0))
         
-         # 计算能量和角动量 (假设学生已实现)
-        energy = calculate_energy(sol_ellipse.y.T, GM_val_demo)
-        angular_momentum = calculate_angular_momentum(sol_ellipse.y.T)
-        print(f"Ellipse Demo: Initial Energy approx {energy[0]:.3f}")
+        initial_conditions_L = []
+        # Lz = m * r0 * vy0. We vary vy0 slightly around vy_base to change Lz while trying to keep E close to E_target.
+        # Note: Strictly keeping E constant while varying L means r0 or speed direction must change.
+        # Here, we fix r0 and initial velocity direction (along y), so varying vy0 changes both E and L.
+        # A more precise way for Task 3 would be to fix E and r_periapsis, then find v_periapsis for different L, 
+        # or fix E and vary the launch angle from a fixed r0.
+        # For simplicity in this demo, we'll vary vy0, which will slightly alter E too.
+        # The project description implies fixing E and varying L. Let's try to achieve that more directly.
+        # For a fixed E (<0) and r0, the speed v0 is fixed: v0 = sqrt(2/m * (E + GMm/r0)).
+        # We can then vary the angle of v0 to change L = m*r0*v0*sin(alpha), where alpha is angle between r0_vec and v0_vec.
+        # Let initial position be (r0, 0). Initial velocity (v0*cos(theta), v0*sin(theta)).
+        # Lz = m * (x0*vy0 - y0*vx0) = m * r0 * v0*sin(theta). Energy E = 0.5*m*v0^2 - GMm/r0.
+        
+        v0_for_E_target = np.sqrt(2/mass_particle * (E_target + GM*mass_particle/r0))
+        print(f"For E_target={E_target} at r0={r0}, required speed v0={v0_for_E_target:.3f}")
 
-        plt.figure(figsize=(8, 6))
-        plt.plot(x_ellipse, y_ellipse, label='椭圆轨道 (示例)')
-        plt.plot(0, 0, 'ko', markersize=8, label='中心天体')
-        plt.title('轨道运动示例')
-        plt.xlabel('x 坐标')
-        plt.ylabel('y 坐标')
+        plt.figure(figsize=(10, 8))
+        plt.plot(0, 0, 'ko', markersize=10, label='Central Body')
+
+        # Launch angles (theta) to vary Lz, keeping v0 (and thus E) constant
+        launch_angles_deg = [90, 60, 45] # Degrees from positive x-axis for velocity vector
+        
+        for i, angle_deg in enumerate(launch_angles_deg):
+            angle_rad = np.deg2rad(angle_deg)
+            vx0 = v0_for_E_target * np.cos(angle_rad)
+            vy0 = v0_for_E_target * np.sin(angle_rad)
+            ic = [r0, 0, vx0, vy0]
+            
+            current_E = calculate_energy(np.array(ic), GM, mass_particle)
+            current_Lz = calculate_angular_momentum(np.array(ic), mass_particle)
+            print(f"  Angle {angle_deg}deg: Calculated E={current_E:.3f} (Target E={E_target:.3f}), Lz={current_Lz:.3f}")
+
+            sol = solve_orbit(ic, (t_start, t_end_ellipse*1.5), np.linspace(t_start, t_end_ellipse*1.5, n_points), gm_val=GM)
+            plt.plot(sol.y[0], sol.y[1], label=f'Lz={current_Lz:.2f} (Launch Angle {angle_deg}°)')
+
+        plt.title(f'Elliptical Orbits with Fixed Energy (E ≈ {E_target:.2f}) and Varying Angular Momentum')
+        plt.xlabel('x')
+        plt.ylabel('y')
+        plt.axhline(0, color='gray', lw=0.5)
+        plt.axvline(0, color='gray', lw=0.5)
         plt.legend()
-        plt.grid(True)
+        plt.grid(True, linestyle='--', alpha=0.7)
         plt.axis('equal')
         plt.show()
+
+
+
+
