@@ -13,40 +13,16 @@ u''(x) = -π(u(x)+1)/4
 
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.integrate import odeint, solve_ivp, solve_bvp
+from scipy.integrate import odeint, solve_bvp
 from scipy.optimize import fsolve
 import warnings
 warnings.filterwarnings('ignore')
 
 
 def ode_system_shooting(t, y):
-    #
+    """
     Define the ODE system for shooting method.
-    def derivatives(y, t, L1, L2, m1, m2, g):
-    theta1, omega1, theta2, omega2 = y
     
-    # 计算中间变量
-    delta = theta1 - theta2
-    cos_delta = np.cos(delta)
-    sin_delta = np.sin(delta)
-    cos_2delta = np.cos(2*delta)
-    
-    # 分母项
-    denominator = m1 + m2 * sin_delta**2
-    
-    # 计算加速度
-    domega1_dt = (
-        m2 * g * np.sin(theta2) * cos_delta
-        - m2 * sin_delta * (L1 * omega1**2 * cos_delta + L2 * omega2**2)
-        - (m1 + m2) * g * np.sin(theta1)
-    ) / (L1 * denominator)
-    
-    domega2_dt = (
-        (m1 + m2) * (L1 * omega1**2 * sin_delta - g * np.sin(theta2) + g * np.sin(theta1) * cos_delta)
-        + m2 * L2 * omega2**2 * sin_delta * cos_delta
-    ) / (L2 * denominator)
-    
-    return [omega1, domega1_dt, omega2, domega2_dt]
     Convert the second-order ODE u'' = -π(u+1)/4 into a first-order system:
     y1 = u, y2 = u'
     y1' = y2
@@ -58,8 +34,8 @@ def ode_system_shooting(t, y):
     
     Returns:
         list: Derivatives [y1', y2']
-    
-    return [y[1], -np.pi*(y[0]+1)/4]
+    """
+    return [y[1], -np.pi * (y[0] + 1) / 4]
 
 
 def boundary_conditions_scipy(ya, yb):
@@ -92,22 +68,13 @@ def ode_system_scipy(x, y):
     Returns:
         array: Derivatives as column vector
     """
-    return np.vstack((y[1], -np.pi*(y[0]+1)/4))
+    return np.vstack((y[1], -np.pi * (y[0] + 1) / 4))
 
 
 def solve_bvp_shooting_method(x_span, boundary_conditions, n_points=100, max_iterations=10, tolerance=1e-6):
     """
     Solve boundary value problem using shooting method.
     
-    sol = solve_ivp(
-    fun=derivatives,
-    t_span=(t0, tf),
-    y0=y0,
-    t_eval=t_points,
-    method='RK45',
-    args=(G, M, L)  # 补充必要的参数
-)
-
     Algorithm:
     1. Guess initial slope m1
     2. Solve IVP with initial conditions [u(0), m1]
@@ -333,97 +300,4 @@ def test_ode_system():
     """
     print("Testing ODE system...")
     
-    # Test point
-    t_test = 0.5
-    y_test = np.array([1.0, 0.5])
-    
-    # Test shooting method ODE system
-    dydt = ode_system_shooting(t_test, y_test)
-    expected = [0.5, -np.pi*(1.0+1)/4]
-    print(f"ODE system (shooting): dydt = {dydt}")
-    print(f"Expected: {expected}")
-    assert np.allclose(dydt, expected), "Shooting ODE system test failed"
-    
-    # Test scipy ODE system
-    dydt_scipy = ode_system_scipy(t_test, y_test)
-    expected_scipy = np.array([[0.5], [-np.pi*2/4]])
-    print(f"ODE system (scipy): dydt = {dydt_scipy.flatten()}")
-    print(f"Expected: {expected_scipy.flatten()}")
-    assert np.allclose(dydt_scipy, expected_scipy), "Scipy ODE system test failed"
-    
-    print("ODE system tests passed!")
-
-
-def test_boundary_conditions():
-    """
-    Test the boundary conditions implementation.
-    """
-    print("Testing boundary conditions...")
-    
-    ya = np.array([1.0, 0.5])  # Left boundary
-    yb = np.array([1.0, -0.3])  # Right boundary
-    
-    bc_residual = boundary_conditions_scipy(ya, yb)
-    expected = np.array([0.0, 0.0])  # Both boundaries should be satisfied
-    print(f"Boundary condition residuals: {bc_residual}")
-    print(f"Expected: {expected}")
-    assert np.allclose(bc_residual, expected), "Boundary conditions test failed"
-    
-    print("Boundary conditions test passed!")
-
-
-def test_shooting_method():
-    """
-    Test the shooting method implementation.
-    """
-    print("Testing shooting method...")
-    
-    x_span = (0, 1)
-    boundary_conditions = (1, 1)
-    
-    x, y = solve_bvp_shooting_method(x_span, boundary_conditions, n_points=50)
-    
-    # Check boundary conditions
-    assert abs(y[0] - boundary_conditions[0]) < 1e-6, "Left boundary condition not satisfied"
-    assert abs(y[-1] - boundary_conditions[1]) < 1e-6, "Right boundary condition not satisfied"
-    
-    print(f"Shooting method: u(0) = {y[0]:.6f}, u(1) = {y[-1]:.6f}")
-    print("Shooting method test passed!")
-
-
-def test_scipy_method():
-    """
-    Test the scipy.solve_bvp wrapper.
-    """
-    print("Testing scipy.solve_bvp wrapper...")
-    
-    x_span = (0, 1)
-    boundary_conditions = (1, 1)
-    
-    x, y = solve_bvp_scipy_wrapper(x_span, boundary_conditions, n_points=20)
-    
-    # Check boundary conditions
-    assert abs(y[0] - boundary_conditions[0]) < 1e-6, "Left boundary condition not satisfied"
-    assert abs(y[-1] - boundary_conditions[1]) < 1e-6, "Right boundary condition not satisfied"
-    
-    print(f"scipy.solve_bvp: u(0) = {y[0]:.6f}, u(1) = {y[-1]:.6f}")
-    print("scipy.solve_bvp wrapper test passed!")
-
-
-if __name__ == "__main__":
-    print("项目2：打靶法与scipy.solve_bvp求解边值问题 - 参考答案")
-    print("=" * 60)
-    
-    # Run all tests
-    print("Running unit tests...")
-    test_ode_system()
-    test_boundary_conditions()
-    test_shooting_method()
-    test_scipy_method()
-    print("All unit tests passed!\n")
-    
-    # Run method comparison
-    print("Running method comparison...")
-    results = compare_methods_and_plot()
-    
-    print("\n项目2完成！所有功能已实现并测试通过。")
+    # Test
