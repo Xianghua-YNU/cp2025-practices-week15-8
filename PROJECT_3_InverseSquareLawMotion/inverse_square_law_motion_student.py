@@ -139,7 +139,12 @@ def calculate_angular_momentum(state_vector, m=1.0):
     4. 如果需要总角动量，则乘以质量 m。
     """
     # TODO: 学生在此处实现代码
-    raise NotImplementedError(f"请在 {__file__} 中实现 calculate_angular_momentum 函数")
+    state_vector=np.atleast_2d(state_vector)
+    x,y,vx,vy=state_vector.T
+    specific_Lz = x * vy - y * vx
+    if state_vector.shape[0]==1:
+        return specific_Lz[0]*m if m!=1.0 else specific_Lz[0]:
+    return specific_Lz*m if m != 1.0 else specific_Lz
 
 
 if __name__ == "__main__":
