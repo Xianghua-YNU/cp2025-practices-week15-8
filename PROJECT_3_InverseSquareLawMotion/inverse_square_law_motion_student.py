@@ -40,7 +40,16 @@ def derivatives(t, state_vector, gm_val):
     5. 返回 [vx, vy, ax, ay]。
     """
     # TODO: 学生在此处实现代码
-    raise NotImplementedError(f"请在 {__file__} 中实现 derivatives 函数")
+    x,y,vx,vy=state_vector
+    r_squared=(x**2+y**2)**1.5
+    if r_squared<=1e-8:
+        r_cubed=r_squared**1.5
+    else:
+        r_cubed=r_squared
+    ax=-gm_val*x/r_cubed
+    ay=-gm_val*y/r_cubed
+    return np.array([vx,vy,ax,ay])
+
 
 def solve_orbit(initial_conditions, t_span, t_eval, gm_val):
     """
