@@ -73,7 +73,15 @@ def solve_orbit(initial_conditions, t_span, t_eval, gm_val):
     5. 设置合理的相对容差 (rtol) 和绝对容差 (atol) 以保证精度，例如 rtol=1e-7, atol=1e-9。
     """
     # TODO: 学生在此处实现代码
-    raise NotImplementedError(f"请在 {__file__} 中实现 solve_orbit 函数")
+    sol=solve_ivp(
+        fun=derivatives
+        t_span=t_span,
+        t_eval=t_eval,
+        args=(gm_val,),
+        method='RK45'
+        rtol=1e-7,atol=1e-9
+    )
+    return sol
 
 def calculate_energy(state_vector, gm_val, m=1.0):
     """
