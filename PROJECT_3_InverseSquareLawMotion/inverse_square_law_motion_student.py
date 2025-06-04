@@ -74,11 +74,11 @@ def solve_orbit(initial_conditions, t_span, t_eval, gm_val):
     """
     # TODO: 学生在此处实现代码
     sol=solve_ivp(
-        fun=derivatives
+        fun=derivatives,
         t_span=t_span,
         t_eval=t_eval,
         args=(gm_val,),
-        method='RK45'
+        method='RK45',
         rtol=1e-7,atol=1e-9
     )
     return sol
@@ -117,7 +117,7 @@ def calculate_energy(state_vector, gm_val, m=1.0):
     potential_energy_per_m = -gm_val / r
     specific_energy = kinetic_energy_per_m + potential_energy_per_m
     if state_vector.shape[0]==1:
-        return specific_energy[0]*m if m!=1.0 else specific_energy[0]:
+        return specific_energy[0]*m if m!=1.0 else specific_energy[0]
     return specific_energy*m if m != 1.0 else specific_energy
 
 def calculate_angular_momentum(state_vector, m=1.0):
@@ -143,7 +143,7 @@ def calculate_angular_momentum(state_vector, m=1.0):
     x,y,vx,vy=state_vector.T
     specific_Lz = x * vy - y * vx
     if state_vector.shape[0]==1:
-        return specific_Lz[0]*m if m!=1.0 else specific_Lz[0]:
+        return specific_Lz[0]*m if m!=1.0 else specific_Lz[0]
     return specific_Lz*m if m != 1.0 else specific_Lz
 
 
@@ -194,4 +194,28 @@ if __name__ == "__main__":
     print("\n请参照 '项目说明.md' 完成各项任务。")
     print("使用 'tests/test_inverse_square_law_motion.py' 文件来测试你的代码实现。")
 
-    pass # 学生代码的主要部分应在函数内实现
+    GM_val_demo = 1.0
+    #E<0
+    ic_ellipse_demo = [1.0, 0.0, 0.0, 0.8]
+    t_start_demo = 0
+    t_end_demo = 20
+    t_eval_demo = np.linspace(t_start_demo, t_end_demo, 500)
+    try:
+        sol_ellipse = solve_orbit(ic_ellipse_demo, (t_start_demo, t_end_demo), t_eval_demo, gm_val=GM_val_demo)
+        x_ellipse, y_ellipse = sol_ellipse.y[0], sol_ellipse.y[1]
+        
+         # 计算能量和角动量 (假设学生已实现)
+        energy = calculate_energy(sol_ellipse.y.T, GM_val_demo)
+        angular_momentum = calculate_angular_momentum(sol_ellipse.y.T)
+        print(f"Ellipse Demo: Initial Energy approx {energy[0]:.3f}")
+
+        plt.figure(figsize=(8, 6))
+        plt.plot(x_ellipse, y_ellipse, label='椭圆轨道 (示例)')
+        plt.plot(0, 0, 'ko', markersize=8, label='中心天体')
+        plt.title('轨道运动示例')
+        plt.xlabel('x 坐标')
+        plt.ylabel('y 坐标')
+        plt.legend()
+        plt.grid(True)
+        plt.axis('equal')
+        plt.show()
